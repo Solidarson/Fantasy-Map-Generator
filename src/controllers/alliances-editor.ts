@@ -26,17 +26,17 @@ const escape = (value: string): string => value.replace(/[&<>"']/g, char => ({
 function render(): void {
   const alliances = getAlliances();
   const states = pack.states.filter(state => state.i && !state.removed).toSorted((a, b) => a.name.localeCompare(b.name));
-  const stateOptions = states.map(state => `<option value="${state.i}">${escape(state.name)}</option>`).join("");
+  const stateOptions = states.map(state => `<label style="display:flex;align-items:center;gap:.4em"><input type="checkbox" value="${state.i}">${escape(state.name)}</label>`).join("");
   const rows = alliances.map(alliance => {
     const memberNames = alliance.members.map(id => pack.states[id]?.name).filter(Boolean).map(escape).join(", ");
-    const members = states.map(state => `<option value="${state.i}" ${alliance.members.includes(state.i) ? "selected" : ""}>${escape(state.name)}</option>`).join("");
+    const members = states.map(state => `<label style="display:flex;align-items:center;gap:.4em"><input type="checkbox" value="${state.i}" ${alliance.members.includes(state.i) ? "checked" : ""}>${escape(state.name)}</label>`).join("");
     return `<section style="border:1px solid #aaa;padding:.5em;margin:.4em 0">
       <div style="display:flex;align-items:center;gap:.4em">
         <span style="display:inline-block;width:1em;height:1em;background:${alliance.color};border:1px solid #555"></span>
         <strong>${escape(alliance.name)}</strong><span>· ${alliance.status}</span><span style="margin-left:auto">${alliance.members.length} members</span>
       </div>
       <div style="margin:.25em 0;font-size:.9em">${memberNames || t("No members")}</div>
-      <label>${t("Members")} <select multiple size="3" data-members="${alliance.id}" style="min-width:15em;max-width:100%">${members}</select></label>
+      <label>${t("Members")}</label><div data-members="${alliance.id}" style="max-height:10em;overflow:auto;border:1px solid #aaa;padding:.3em;min-width:15em;max-width:100%">${members}</div>
       <button data-save-members="${alliance.id}">${t("Save members")}</button>
       <button data-dissolve="${alliance.id}" ${alliance.status === "dissolved" ? "disabled" : ""}>${t("Dissolve")}</button>
       <button data-delete="${alliance.id}">${t("Delete")}</button>
@@ -48,7 +48,7 @@ function render(): void {
       <label>${t("Alliance name")}<input id="allianceName" type="text" maxlength="80" /></label>
       <label>${t("Color")}<input id="allianceColor" type="color" value="#4778c7" /></label>
       <label>${t("Type")}<select id="allianceType"><option value="political">${t("Political")}</option><option value="defensive">${t("Defensive")}</option><option value="military">${t("Military")}</option><option value="economic">${t("Economic")}</option></select></label>
-      <label>${t("Initial members")}<select id="allianceMembers" multiple size="4" style="min-width:12em">${stateOptions}</select></label>
+      <label>${t("Initial members")}</label><div id="allianceMembers" style="max-height:12em;overflow:auto;border:1px solid #aaa;padding:.3em;min-width:12em">${stateOptions}</div>
     </div>
     <button id="allianceCreate">${t("Create alliance")}</button>
     <hr /><h3>${t("Existing alliances")}</h3>
@@ -65,7 +65,7 @@ function render(): void {
       const name = ensureEl<HTMLInputElement>("allianceName").value;
       const color = ensureEl<HTMLInputElement>("allianceColor").value;
       const type = ensureEl<HTMLSelectElement>("allianceType").value as AllianceType;
-      const members = [...ensureEl<HTMLSelectElement>("allianceMembers").selectedOptions].map(option => Number(option.value));
+      const members = [...dialog.querySelectorAll<HTMLInputElement>('#allianceMembers input[type="checkbox"]:checked')].map(input => Number(input.value));
       createAlliance(getAlliances(), pack.states, { name, color, type, members });
       refresh();
     } catch (error) {
@@ -74,9 +74,10 @@ function render(): void {
   });
   dialog.querySelectorAll<HTMLButtonElement>("[data-save-members]").forEach(button => button.addEventListener("click", () => {
     const alliance = getAlliances().find(item => item.id === button.dataset.saveMembers);
-    const select = dialog!.querySelector<HTMLSelectElement>(`[data-members="${button.dataset.saveMembers}"]`);
-    if (!alliance || !select) return;
-    setAllianceMembers(alliance, [...select.selectedOptions].map(option => Number(option.value)), pack.states);
+    const memberList = dialog!.querySelector<HTMLDivElement>(`[data-members="${button.dataset.saveMembers}"]`);
+    if (!alliance || !memberList) return;
+    const members = [...memberList.querySelectorAll<HTMLInputElement>('input[type="checkbox"]:checked')].map(input => Number(input.value));
+    setAllianceMembers(alliance, members, pack.states);
     refresh();
   }));
   dialog.querySelectorAll<HTMLButtonElement>("[data-dissolve]").forEach(button => button.addEventListener("click", () => {
