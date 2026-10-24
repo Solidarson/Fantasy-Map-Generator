@@ -53,11 +53,14 @@ function render(): void {
     <button id="allianceCreate">${t("Create alliance")}</button>
     <hr /><h3>${t("Existing alliances")}</h3>
     ${rows || `<p>${t("No alliances yet")}</p>`}`;
-  let dialog = findEl(dialogId);
-  if (dialog) dialog.innerHTML = inner;
-  else {
+  let dialog: HTMLElement;
+  const existingDialog = findEl(dialogId);
+  if (existingDialog) {
+    dialog = existingDialog as HTMLElement;
+    dialog.innerHTML = inner;
+  } else {
     ensureEl("dialogs").insertAdjacentHTML("beforeend", `<div id="${dialogId}" class="dialog" style="display:flex;flex-direction:column;gap:.4em;max-height:75vh;overflow:auto;min-width:26em">${inner}</div>`);
-    dialog = ensureEl(dialogId);
+    dialog = ensureEl<HTMLElement>(dialogId);
   }
 
   dialog.querySelector("#allianceCreate")?.addEventListener("click", () => {
